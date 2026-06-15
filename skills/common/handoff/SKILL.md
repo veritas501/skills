@@ -7,13 +7,9 @@ allowed-tools: Read, Grep, Glob, Bash
 
 # Agent Handoff Skill
 
-You are generating a cross-session context handoff summary.
+You are generating a context handoff that a NEW AGENT will consume to resume work in a fresh session.
 
-## Purpose
-
-Use /handoff when the session context is getting too long, quality is degrading, or you want to start fresh while preserving essential context. This generates a structured context summary that a NEW AGENT can consume to continue work seamlessly.
-
-CRITICAL: The output is written FOR A NEW AGENT, not for the user. Every sentence should be actionable instructions or concrete state that another agent instance can directly use. Avoid human-readable summaries, status reports, or explanatory prose.
+CRITICAL — this one fact changes how you write everything: the output is FOR A NEW AGENT, not for the user. Every line must be an actionable instruction or concrete state another agent can directly use or verify. No human-readable narrative, no status report, no explanatory prose. This is counter-intuitive — your default is to summarize for a human; resist it.
 
 Arguments: $ARGUMENTS
 
@@ -47,7 +43,13 @@ On top of the pre-collected git context, perform additional collection:
 
 1. **Task status**: Call TaskList or read TODO files for current task progress (if any active tasks exist)
 2. **Project instructions**: Check if `CLAUDE.md` or `.claude/CLAUDE.md` exists in the project, read key instructions if found
-3. **Session context review**: Review the entire conversation history and extract:
+3. **Loaded skills**: Identify every skill that has been activated or invoked in this session. Sources to scan:
+   - Skill tool invocations in the conversation (e.g. `Skill(skill="X")`)
+   - Skill names surfaced as `<command-name>` / slash-command markers (e.g. `/X`)
+   - Entries listed under "Skills relevant to your task:" system reminders
+   - Skill references the user mentioned by name
+   Record the exact skill name (as it appears in the Skill tool) and a one-line note on what it was used for or why the next agent needs it. If no skills were loaded, note "None".
+4. **Session context review**: Review the entire conversation history and extract:
    - User's original requests (verbatim)
    - Work that was completed
    - Technical decisions made and their rationale
@@ -56,17 +58,11 @@ On top of the pre-collected git context, perform additional collection:
 
 ### PHASE 3: Extract and Structure
 
-IMPORTANT: You are writing instructions for a new agent, not a report for the user.
-
-Write everything as direct, actionable context:
+Transform human-style summaries into agent-actionable instructions. The pattern (apply to every line you write):
 - BAD: "The project uses a hybrid approach combining lightweight and full protocol features"
 - GOOD: "When adding new features, only auto-detect CLAUDE.md and TaskList. Do not add SCOPE.yml or STATUS.yml dependencies."
-
-- BAD: "The user prefers English for all command content"
-- GOOD: "All content in handoff.md must be in English. Do not mix Chinese and English."
-
 - BAD: "Future work may include testing the handoff output quality"
-- GOOD: "Next task: test handoff output by running /handoff in a session with active work, verify the output is agent-consumable"
+- GOOD: "Next task: run /handoff in a session with active work, verify the output is agent-consumable"
 
 Extraction focus:
 - Convert decisions into rules the new agent must follow
@@ -75,16 +71,10 @@ Extraction focus:
 - Only include files the new agent can actually access (not gitignored or external references)
 - USER REQUESTS must be quoted verbatim, never paraphrased
 - If user requests reference temporary or session-scoped files (e.g. ~/.claude/plans/, /tmp/, session-generated files), inline the key content into TASK or PENDING — the new agent will NOT have access to those files
+- LOADED SKILLS must be listed by their exact Skill tool name so the new agent can reload them in one shot; do not paraphrase or rename skill identifiers
 - If there are no pending tasks, state what was last completed and what logical next steps would be
 - Review your own mistakes during this session — wrong approaches tried, dead ends hit, incorrect assumptions made — and record them in GOTCHAS so the new agent does not repeat them
 - Preserve the last 3-5 concrete operations (exact commands, API calls, file edits) as LAST OPERATIONS — this gives the new agent few-shot examples of how things are done in this project, preventing it from guessing at operational patterns
-
-Guiding questions for extraction:
-- What rules must the new agent follow when modifying this codebase?
-- What is the current state the new agent will find when it reads the files?
-- What task should the new agent work on next?
-- What mistakes did I make that the new agent should avoid?
-- What user preferences must be respected?
 
 ### PHASE 4: Format Output
 
@@ -105,6 +95,11 @@ STATE
 - Branch: [branch name] @ [commit SHA]
 - [Build/test status if applicable]
 - [Key state the new agent needs to know]
+
+SKILLS
+------
+- [exact-skill-name] - [one-line: what it does / why it is needed]
+- (List every skill loaded in this session by its exact Skill tool name; the new agent MUST reload each via the Skill tool before continuing. If none, write "None")
 
 PENDING
 -------
@@ -165,6 +160,11 @@ FILES
 - [path/to/file2] - [what to do with it or why it matters]
 (Maximum 10 files, only files the new agent can access)
 
+SKILLS
+------
+- [exact-skill-name] - [one-line: what it does / why it is needed]
+- (List every skill loaded in this session by its exact Skill tool name; the new agent MUST reload each via the Skill tool before continuing. If none, write "None")
+
 RULES
 -----
 - [Direct imperatives the new agent must follow, derived from decisions and constraints]
@@ -189,10 +189,10 @@ GOTCHAS
 - Plain text with bullets format
 - Use `===` and `---` underline style for headers, no `#` markdown headers
 - No bold, italic, or code fences within content
-- Use workspace-relative paths for files
+- Use workspace-relative paths; exclude files the new agent cannot access (gitignored dirs, external references, temp files); FILES ≤ 10 entries
 - Every bullet must be actionable or verifiable by the new agent
-- Do not include files the new agent cannot access (gitignored dirs, external references, temp files)
 - USER REQUESTS (AS-IS) must contain verbatim quotes only
+- Self-contained: must work without access to the current session. Do NOT include secrets (API keys, credentials). Do NOT attempt to programmatically create new sessions
 
 ---
 
@@ -211,17 +211,6 @@ TO CONTINUE IN A NEW SESSION:
 
 The new session will have all context needed to continue seamlessly.
 ```
-
----
-
-## Important Constraints
-
-- Do NOT attempt to programmatically create new sessions
-- Provide a self-contained summary that works without access to the current session
-- Use workspace-relative file paths
-- Do NOT include sensitive information (API keys, credentials, secrets)
-- FILES must not exceed 10 entries and must only reference accessible files
-- Every section should contain information a new agent can act on or verify
 
 ---
 
