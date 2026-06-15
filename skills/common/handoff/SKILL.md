@@ -209,7 +209,11 @@ TO CONTINUE IN A NEW SESSION:
 2. Paste the HANDOFF CONTEXT above as your first message
 3. Add your request: "Continue from the handoff context above. [Your next task]"
 
-The new session will have all context needed to continue seamlessly.
+NEW AGENT — DO THIS BEFORE ACTING ON THE TASK:
+- Reload every skill in SKILLS via the Skill tool (exact names) — do not proceed without them
+- Read every file in FILES, and any file path referenced in TASK/PENDING/GOTCHAS
+- Explore the repo to verify STATE and COMPLETED against the actual current code — trust the files over this summary if they diverge
+- Only then start on TASK
 ```
 
 ---
