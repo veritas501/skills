@@ -13,6 +13,18 @@ Write implementation plans as a **layered, multi-file directory** instead of one
 
 **Companion skills:** The discussion that produces the agreed frame is governed by `plan-discuss` (breadth-first, probe, fold). Plans written this way are executed with `plan-execute`, which enforces reading the top-level files before any task.
 
+## Precondition: agreed frame required
+
+plan-write turns an **already-agreed** top-level frame into files. It is not where you figure out the approach.
+
+```
+NO PLAN FILES BEFORE THE FRAME IS AGREED.
+```
+
+Before writing any file, confirm the frame is settled with the user (goal, non-goals, architecture, tech choice). If it is NOT — requirements still fluid, multiple approaches open, no breadth-first discussion happened yet — STOP and load `plan-discuss` first. Discuss to a frozen frame, then return here.
+
+Pipeline order is fixed: **plan-discuss → plan-write → plan-execute**. Do not enter plan-write from a vague request; do not skip discussion just because a directory format is ready to fill.
+
 ## When to Use
 
 - Writing a plan for any feature that needs more than ~2 tasks

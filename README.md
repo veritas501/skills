@@ -41,6 +41,7 @@ bash scripts/symlink_skills.sh
 
 | Skill | 用途 |
 |-------|------|
+| `skill-writer` | 写/审/改 agent skill（SKILL.md），约束 skill 与 agent 能力互补而非冗余 |
 | `readme-writer` | 从首次读者视角写/审/改 README，约束 agent 不编命令、不泄 secret、不写成百科 |
 | `handoff` | 上下文过长或质量下降时，生成跨会话交接摘要 |
 
