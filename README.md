@@ -33,7 +33,7 @@ npx skills add . -g
 bash scripts/symlink_skills.sh
 ```
 
-脚本把 `skills/` 下每个含 `SKILL.md` 的目录软链接到 `~/.claude/skills/<name>`。已存在的同名实体目录会被替换为软链接。
+脚本把 `skills/` 下每个含 `SKILL.md` 的目录软链接到 `~/.claude/skills/<name>`（可通过位置参数指定其他目标目录：`bash scripts/symlink_skills.sh <目标目录>`）。已存在的同名实体目录会被替换为软链接。
 
 ## 技能清单
 

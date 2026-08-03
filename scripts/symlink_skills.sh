@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Links all skills in the repository to ~/.claude/skills, so that
-# they can be used by the local Claude CLI.
+# Links all skills in the repository to a target skills directory (default
+# ~/.claude/skills), so that they can be used by the local Claude CLI or
+# another agent runtime. Pass the destination as the first positional arg:
+#   scripts/symlink_skills.sh [DEST]
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-DEST="$HOME/.claude/skills"
+DEST="${1:-$HOME/.claude/skills}"
 
 # If ~/.claude/skills is a symlink that resolves into this repo, we'd end up
 # writing the per-skill symlinks back into the repo's own skills/ tree. Detect
