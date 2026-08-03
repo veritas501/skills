@@ -36,5 +36,5 @@ while IFS= read -r -d '' skill_md; do
   fi
 
   ln -sfn "$src" "$target"
-  echo "linked $name -> $src"
+  echo "linked $name -> $target"
 done
