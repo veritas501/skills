@@ -1,130 +1,203 @@
 ---
 name: plan-write
-description: Use when writing an implementation plan for a multi-step feature, before touching code, especially when a single plan.md would mix top-level design with implementation detail. Use when you have a spec or agreed design and need to lay it out as files an executor can follow without drifting.
+description: Use when writing or revising a layered implementation plan for an agreed multi-step change, especially when tasks need stable dependencies, write scopes, acceptance mapping, bounded implementation detail, or linked plan history.
 ---
 
 # plan-write
 
 ## Overview
 
-Write implementation plans as a **layered, multi-file directory** instead of one `plan.md`. Top-level design is split by dimension into separate files; each subtask is its own file that references the top-level files it depends on.
+Write an agreed change as a **layered Markdown plan**: stable design files plus bounded task files that a coordinator can execute without rediscovering architecture or receiving pre-written implementation.
 
-**Core principle:** A single plan.md mixes stable top-level design with volatile implementation detail. The detail buries the design, and executors drift from it. Physical separation by layer and dimension is what gives the top-level design enforcing power.
+Keep three artifacts distinct:
 
-**Companion skills:** The discussion that produces the agreed frame is governed by `plan-discuss` (breadth-first, probe, fold). Plans written this way are executed with `plan-execute`, which enforces reading the top-level files before any task.
+- **Plan:** point-in-time contract for one agreed change.
+- **Results:** execution evidence—changed files, verification, deviations, blockers, and completion state.
+- **Current system documentation:** current code, tests, schemas, ADRs, and maintained product documentation.
+
+**Core principle:** Separate stable decisions from task detail, then preserve the authored plan after execution begins. A historical plan explains the intended change; it is not living documentation for the repository forever.
+
+**Companion skills:** `plan-discuss` settles the frame breadth-first. `plan-write` records that frame. `plan-execute` freezes and executes it while re-reading declared design dependencies.
 
 ## Precondition: agreed frame required
 
-plan-write turns an **already-agreed** top-level frame into files. It is not where you figure out the approach.
+`plan-write` turns an **already-agreed** frame into files. It is not where the approach is selected.
 
 ```
 NO PLAN FILES BEFORE THE FRAME IS AGREED.
 ```
 
-Before writing any file, confirm the frame is settled with the user (goal, non-goals, architecture, tech choice). If it is NOT — requirements still fluid, multiple approaches open, no breadth-first discussion happened yet — STOP and load `plan-discuss` first. Discuss to a frozen frame, then return here.
+Before writing, confirm goal, non-goals, architecture, technology, and acceptance with the user. If requirements remain fluid or materially different approaches are open, stop and load `plan-discuss` first.
 
-Pipeline order is fixed: **plan-discuss → plan-write → plan-execute**. Do not enter plan-write from a vague request; do not skip discussion just because a directory format is ready to fill.
+Pipeline order is fixed: **plan-discuss → plan-write → plan-execute**.
 
-## When to Use
+## Plan lifecycle and history
 
-- Writing a plan for any feature that needs more than ~2 tasks
-- You have an agreed spec/design and need to turn it into an executable plan
-- Past plans drifted: executor ignored architecture, re-chose tech, broke module boundaries
-- A plan.md is growing large and the top-level intent is getting buried
+### Draft
 
-**When NOT to use:** trivial single-file changes, throwaway scripts. A directory is overkill there.
+A plan is editable only before execution starts. While no `results/00-execution.md` exists, revise the design and tasks with the user as needed.
 
-## Layered Authoring (breadth-first)
+### Frozen
 
-Do NOT write all layers at once. Stabilize the top before drilling down.
+`plan-execute` creates `results/00-execution.md` before the first task. Its presence freezes authored files: `00`–`50` and `tasks/` MUST NOT be edited. Runtime facts belong only in `results/`.
 
-1. **L0/L1 first** — write `00-overview.md` (contract) and the structural dimension files (architecture, tech-stack). Get user agreement on these BEFORE writing any task file.
-2. **Probe before drilling** — before expanding a branch into task detail, run the five-question feasibility probe from `plan-discuss` (goal / necessity / solvability / verifiability / reversibility). If any fails, stop and surface the blocker — don't write speculative tasks.
-3. **Fold when top changes** — if a top-level file changes, compress affected task detail back to a summary rather than rewriting it all. Top-level files are stable; task files are volatile.
+### Follow-up or corrective change
 
-## Directory Structure
+After freeze, a new requirement, changed meaning, invalid design assumption, or material correction requires a separate plan:
 
-```
-.plans/<MM-DD>-<feature_name>/   # relative to working directory
-  00-overview.md        # L0 contract: goal, non-goals, constraints, acceptance, assumptions
-  10-tech-stack.md      # language, framework, key deps + versions, why
-  20-architecture.md    # modules, boundaries, dependency relations, data flow
-  30-data-model.md      # data structures, storage, schema   (omit if N/A)
-  40-interfaces.md      # inter-module / API contracts        (omit if N/A)
+- `original`: first plan in a lineage; parent is `none`.
+- `follow-up`: additional or changed behavior after an earlier plan.
+- `corrective`: repairs a material defect in an earlier agreed design.
+
+The new plan MUST inspect the current repository first. Reference the earlier plan only for lineage and rationale, describe the delta, and restate constraints still needed for safe execution. Never synchronize an old plan to current code or treat it as current architecture documentation.
+
+## Layered authoring
+
+Stabilize the top before drilling down:
+
+1. Write `00-overview.md` and structural dimension files first; obtain user agreement before task files.
+2. Probe goal, necessity, solvability, verifiability, and reversibility before expanding a branch into tasks.
+3. While still draft, fold task detail back when a top-level decision changes instead of preserving detail based on an obsolete frame.
+
+## Directory structure
+
+```text
+.plans/<MM-DD>-<feature_name>/
+  00-overview.md        # goal, lineage, constraints, acceptance, assumptions
+  10-tech-stack.md      # retained/new technology and rationale
+  20-architecture.md    # modules, owners, boundaries, dependencies, data flow
+  30-data-model.md      # data structures, storage, schema; omit if N/A
+  40-interfaces.md      # public/inter-module contracts; omit if N/A
   50-risks.md           # risks, open questions, blockers
   tasks/
     task-01-<slug>.md
     task-02-<slug>.md
-    ...
+  results/              # created/updated by plan-execute, not authored as task design
+    00-execution.md
+    <Task-ID>.md
 ```
 
-**Numbered prefix = read order = stability.** `00` is most stable (the contract); `50` changes most. Add dimensions per project (`15-ui-design.md`, `25-deployment.md`); drop ones that don't apply. `00-overview.md`, `20-architecture.md`, and `tasks/` are the non-negotiable skeleton.
+Numbered prefixes define read order and stability. `00-overview.md`, `20-architecture.md`, and `tasks/` are required; add or omit other dimensions only when the change needs them.
 
-**Split by responsibility, not layer.** Files that change together live together. One dimension per file so changing architecture never touches tech-stack.
+## Top-level file rules
 
-## Top-Level File Rules
+- `00-overview.md` MUST contain `Plan lineage`, Goal, Non-goals, Constraints, stable Acceptance criteria IDs, and Assumptions.
+- `Plan lineage` MUST name **Plan type**, **Parent plan**, and **Trigger**. Original plans use parent `none`.
+- Every acceptance ID MUST map to at least one task.
+- `20-architecture.md` MUST state module ownership, boundaries, dependency relations, and data flow.
+- Top-level files state decisions and contracts, not commands, full code, or step-by-step implementation.
+- Durable current-state architecture belongs in maintained docs, ADRs, schemas, tests, and code—not in historical plans.
 
-Each dimension file is short and declarative — it states decisions, not implementations.
+## Task graph and coordination metadata
 
-- `00-overview.md` MUST contain: Goal (1 sentence), Non-goals, Constraints, Acceptance criteria, Assumptions. NO tech choices, NO code.
-- `20-architecture.md` MUST contain module list + boundaries + dependency relations. NO function-level code.
-- Forbidden in any top-level file: full code, command flows, step-by-step implementation. Those go in task files only.
+Every new task MUST declare:
 
-## Task File Structure (anti-drift)
+- `Task-ID`: stable identity such as `TASK-01`.
+- `Depends-on`: top-level design files the worker must re-read before the task.
+- `After`: predecessor Task-IDs requiring valid completed results; `none` when independent.
+- `Write-scope`: exact files or conservative directory patterns the task may modify.
+- `Produces`: expected files or durable outputs.
+- `Acceptance`: stable acceptance IDs this task helps satisfy.
 
-Every task file MUST start with a `Depends-on:` header listing the top-level files it must obey. This is the hook `plan-execute` uses to force re-reading the design before implementing.
+`Depends-on` is a design-reading gate; `After` is an execution dependency. They are not interchangeable.
+
+Task numbers MUST form a valid topological order and the graph MUST have no cycles. A task becomes ready only after every `After` predecessor completes. Ready tasks may run concurrently only when write scopes and side effects are clearly disjoint. Shared manifests, generated outputs, migrations, fixtures, or uncertain scope force serialization. This declarative graph is sufficient; do not add runtime orchestration code.
+
+## Task file structure
+
+Use contract-level prose, not a replacement implementation:
 
 ```markdown
-# Task 01: <component name>
+# Task 02: Add session-expiry handling
 
+Task-ID: TASK-02
 Depends-on: 00-overview.md, 20-architecture.md, 40-interfaces.md
+After: TASK-01
+Write-scope: src/auth/session.ts, tests/auth/session.test.ts
+Produces: src/auth/session.ts, tests/auth/session.test.ts
+Acceptance: AC-03, AC-04
 
 ## Constraints from top-level
-- <copy the specific architecture boundary / interface contract this task must honor>
+- Session policy remains owned by the auth module.
+- Preserve the existing public session interface and error taxonomy.
 
-## Files
-- Create: exact/path/to/file.ext
-- Modify: exact/path/to/existing.ext:120-145
-- Test: tests/exact/path/test.ext
+## Files and symbols
+- Modify `validateSession` in `src/auth/session.ts`.
+- Extend expiry scenarios in `tests/auth/session.test.ts`.
 
 ## Steps
-- [ ] Step 1: write failing test  (full test code here)
-- [ ] Step 2: run, expect FAIL
-- [ ] Step 3: minimal implementation (full code here)
-- [ ] Step 4: run, expect PASS
-- [ ] Step 5: commit
+- Describe expired, valid, and malformed-session behavior, including boundary timestamps.
+- Add a failing scenario for the observable expiry contract, then implement within the named owner.
+- Run the repository's focused auth test command; expect the new and existing scenarios to pass.
 
 ## Verify against top-level
-- [ ] Output respects boundaries declared in 20-architecture.md
-- [ ] No new tech introduced beyond 10-tech-stack.md
+- Confirm ownership and dependency direction match `20-architecture.md`.
+- Confirm the public contract still matches `40-interfaces.md`.
+- Confirm no technology outside `10-tech-stack.md` was introduced.
 ```
 
-**No placeholders.** Each code step shows the actual code. "TBD"/"implement later"/"add error handling" are plan failures.
+Prefer stable files, modules, and symbol names over brittle line ranges.
 
-## Execution Handoff
+## Minimum sufficient specificity
 
-Layered discussion is for *thinking clearly*; execution needs full context. Before handing off:
+A task must be executable without guessing its objective or boundaries, but MUST NOT ordinarily pre-write the implementation.
 
-1. Confirm L0/L1 files are frozen (user-approved).
-2. Tell the user: tasks live in `.plans/<MM-DD>-<feature_name>/tasks/`, top-level design in `00`–`50`.
-3. Invoke `plan-execute` to run tasks task-by-task with top-level files as a hard precondition.
+Require concrete:
 
-## Self-Review
+- Outcomes and observable acceptance behavior.
+- Architectural boundaries, ownership, and invariants.
+- Public interfaces or schema shapes when relevant.
+- Target files, modules, and symbols.
+- Edge cases, compatibility constraints, verification commands, and expected outcomes.
+- Explicit non-goals and forbidden scope when ambiguity is plausible.
 
-After writing the directory, check:
+Normally forbid:
 
-1. **Coverage:** every acceptance criterion in `00-overview.md` maps to at least one task.
-2. **Depends-on present:** every task file has a `Depends-on:` header and a "Constraints from top-level" section.
-3. **No leakage:** no code/commands in `00`–`50`; no design decisions buried only in a task.
-4. **Naming consistency:** types/functions named in later tasks match earlier ones.
+- Full function, class, or file bodies.
+- Full test bodies.
+- “Replace this file with the exact content below.”
+- Exact line numbers when a stable symbol or structural location exists.
+- Premature private implementation choices such as helper layout or local control flow.
 
-Fix inline.
+A short code-shaped example is allowed only when the text itself is the contract: a public signature, schema/protocol payload, migration shape, security invariant, or genuinely non-obvious algorithm. Keep it minimal and state why prose would be less precise.
 
-## Common Mistakes
+Vague instructions remain plan failures. Removing code does not permit “implement error handling,” “add tests,” or “TBD.” Correct vagueness with precise behavior, boundaries, named locations, edge cases, examples, and verification—not ordinary full source or test bodies.
+
+## Execution handoff
+
+Before invoking `plan-execute`:
+
+1. Confirm the plan is still a draft and the user approved the top-level frame.
+2. Validate task metadata, dependencies, write scopes, outputs, and acceptance coverage.
+3. Tell the user where authored plan files live and that execution will freeze them by creating `results/00-execution.md`.
+4. Invoke `plan-execute`; do not edit the authored plan after freeze.
+
+## Self-review
+
+Before handoff, check:
+
+1. Every acceptance ID maps to at least one task.
+2. Every task has `Task-ID`, `Depends-on`, `After`, `Write-scope`, `Produces`, and `Acceptance`.
+3. Numeric order is topological; dependencies are valid and acyclic; overlapping scopes are serialized.
+4. Every task restates the top-level constraints it must honor.
+5. No implementation detail leaked into top-level files.
+6. No ordinary full source/test body or exact-content replacement appears in tasks.
+7. Task prose remains specific about outcomes, boundaries, symbols, invariants, edge cases, and verification.
+8. `Plan lineage` exists and correctly identifies original, follow-up, or corrective history.
+9. The plan is still a draft; no execution marker exists.
+10. No later requirement is being folded into an already-frozen plan.
+
+Fix defects before handoff.
+
+## Common mistakes
 
 | Mistake | Fix |
 |---|---|
-| Writing all task files before user approves top-level | Freeze `00`/`20` first. Tasks are volatile, design is the anchor. |
-| Task file with no `Depends-on:` | Executor has nothing to re-read → drift. Always add it. |
-| Code snippets sneaking into `20-architecture.md` | Move to a task file. Top-level states decisions only. |
-| One giant `tasks/task-01.md` doing everything | One responsibility per task file. |
+| Writing tasks before the frame is agreed | Return to `plan-discuss`; approve `00` and structural files first. |
+| Omitting coordination metadata | Add all six stable fields; do not make the executor infer dependencies or scope. |
+| Editing an old plan to match later code | Preserve it as history; inspect current state and create a linked follow-up/corrective plan. |
+| Treating a plan as current architecture documentation | Update maintained docs/ADRs/schemas when current-state documentation is needed. |
+| Writing full source or test bodies in a task | State contracts, target symbols, behavior, invariants, scenarios, and expected verification instead. |
+| Becoming vague after removing code blocks | Add observable outcomes, edge cases, named locations, and pass/fail evidence. |
+| Using exact line numbers | Name the stable symbol or structural location. |
+| Parallelizing overlapping or uncertain scopes | Serialize them with `After`; parallelism requires clearly disjoint writes and side effects. |
