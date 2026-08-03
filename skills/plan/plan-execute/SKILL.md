@@ -40,8 +40,9 @@ Before dispatching or implementing the first task:
 
 1. Read `00-overview.md` fully and retain its Non-goals, Constraints, and stable Acceptance IDs.
 2. Inventory task files in numeric order.
-3. Create `results/` if absent.
-4. Create `results/00-execution.md` before any task changes, recording:
+3. If the workspace is a Git repository, proactively create or update the repository-root `.gitignore` so it contains `.plans/`. The ignore-rule change may be committed; do not stage or commit `.plans/` content unless the user explicitly requests versioned plan history.
+4. Create `results/` if absent.
+5. Create `results/00-execution.md` before any task changes, recording:
    - Plan path.
    - Execution start time when available.
    - State: `executing`.
@@ -197,6 +198,8 @@ After all tasks have valid completed results:
 6. Set execution state to `completed` only when every acceptance criterion is met.
 
 Do not back-sync plans: never edit the historical authored plan merely to make its prose resemble the final private implementation. If behavior or an agreed contract changed materially, use a linked plan instead.
+
+Before any commit, confirm `.plans/` is covered by the repository-root `.gitignore` in Git workspaces and remains outside the commit unless the user explicitly requested otherwise.
 
 ## Legacy Plan Compatibility
 

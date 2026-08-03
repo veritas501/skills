@@ -79,6 +79,12 @@ Stabilize the top before drilling down:
 
 Numbered prefixes define read order and stability. `00-overview.md`, `20-architecture.md`, and `tasks/` are required; add or omit other dimensions only when the change needs them.
 
+## Git handling
+
+Plan directories are local coordination artifacts by default. Before creating `.plans/`, determine whether the workspace is a Git repository. If it is, proactively create or update the repository-root `.gitignore` so it contains `.plans/`; do not wait for the user and do not rely only on careful staging.
+
+The `.gitignore` change is normal repository configuration and may be committed. Do not stage or commit files under `.plans/` unless the user explicitly requests versioned plan history.
+
 ## Top-level file rules
 
 - `00-overview.md` MUST contain `Plan lineage`, Goal, Non-goals, Constraints, stable Acceptance criteria IDs, and Assumptions.

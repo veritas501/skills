@@ -10,3 +10,6 @@ Thumbs.db
 
 # Node (from npx/skills tooling)
 node_modules/
+
+# Local agent plans
+.plans/

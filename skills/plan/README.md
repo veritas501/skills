@@ -18,4 +18,6 @@ New requirements or material design corrections create a linked **follow-up** or
 
 Current code, tests, schemas, ADRs, and maintained documentation describe the current system. Update those current-state artifacts when a task requires it; do not repurpose historical plans as living documentation.
 
+Plan directories are local artifacts by default. In a Git repository, `plan-write` proactively adds `.plans/` to the repository-root `.gitignore`; `.plans/` content is not committed unless the user explicitly requests versioned plan history.
+
 This protocol remains entirely Skill- and Markdown-based. Safe sub-agent coordination is optional, sequential execution is complete, and retroactive plan editing is prohibited.
