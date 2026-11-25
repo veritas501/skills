@@ -1,6 +1,6 @@
 ---
 name: plan-write
-description: Use when writing or revising a layered implementation plan for an agreed multi-step change, especially when tasks need stable dependencies, write scopes, acceptance mapping, bounded implementation detail, or linked plan history.
+description: Write an agreed multi-step change as a layered plan directory of design and task files.
 ---
 
 # plan-write

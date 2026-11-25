@@ -1,6 +1,6 @@
 ---
 name: git-bump-version
-description: Use when preparing a Git repository release, bumping a SemVer version, creating a release commit, or tagging a version. Triggers on "bump version", "release commit", "git tag", "发版", "版本号递增", "打版本标签", and requests to summarize changes since the previous release.
+description: Bump a SemVer version in a Git repo with a release commit, release notes, and an annotated tag.
 ---
 
 # Git Bump Version

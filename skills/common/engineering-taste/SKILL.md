@@ -1,17 +1,15 @@
 ---
 name: engineering-taste
-description: Use when code lacks a healthy local precedent or shows AI-generated structural smells: unclear ownership, long function-heavy modules, fake classes or fake modularity, repeated type switches, forwarding-only wrappers, speculative abstractions, or refactoring decisions caused by those symptoms.
+description: Judge code ownership, boundaries, and abstractions when precedent is missing or AI-shaped.
 ---
 
 # Engineering Taste
 
 This skill supplies the engineering judgment AI often loses without a healthy human codebase to imitate. The spine is: **study → place → shape → implement → verify**.
 
-## Use / do not use
+## When to step back
 
-Use when ownership, boundary, or abstraction judgment is genuinely unclear—especially in greenfield, AI-led, or already AI-shaped code.
-
-Do not load it merely because a feature is non-trivial, for language-style lookup alone, or for a mechanical edit. Do not replace a healthy project convention with generic taste.
+This skill is for cases where ownership, boundary, or abstraction judgment is genuinely unclear—especially in greenfield, AI-led, or already AI-shaped code. Drop it and proceed normally when the task is merely non-trivial, a language-style lookup, or a mechanical edit. Never replace a healthy project convention with generic taste.
 
 ## Precedence
 
@@ -83,9 +81,9 @@ Protect observable behavior, invariants, boundaries, and failure paths. Run the 
 
 | Symptom | Likely problem | First direction |
 |---|---|---|
-| Multi-kLOC function/module sea | No ownership / mixed change axes | `recipes/recover-god-module.md` |
+| Multi-kLOC function/module sea | No ownership / mixed change axes | `references/recipes/recover-god-module.md` |
 | Same argument bag through many helpers | Data clump or missing capability object | Parameter object or cohesive object |
-| Same switch/type branch in several places | Variant logic has no owner | `recipes/replace-conditional-with-polymorphism.md` |
+| Same switch/type branch in several places | Variant logic has no owner | `references/recipes/replace-conditional-with-polymorphism.md` |
 | Files split but every call still ferries the same dependencies | Fake modularity | Reassign ownership; collapse false boundaries |
 | Empty/one-shot class for a stateless method | Class theater | Function or justified type-level API |
 | Base class/protocol/factory with one implementation | Speculative generality | Delete until evidence exists |

@@ -1,6 +1,6 @@
 ---
 name: plan-discuss
-description: Use when discussing or designing a plan with the user, before writing any plan files or code — exploring approaches, refining requirements, deciding architecture. Use when the user wants to think through an approach and a large one-shot design dump would overload them or pre-commit to detail too early.
+description: Discuss and settle a plan's top-level frame with the user before any plan files or code.
 ---
 
 # plan-discuss
@@ -13,13 +13,7 @@ How to conduct the **discussion phase** of planning: think breadth-first, surfac
 
 **Terminal state:** When the top-level frame is agreed and frozen, hand off to `plan-write` to lay it out as files. Do NOT write plan files or code during discussion.
 
-## When to Use
-
-- User wants to discuss an approach, feature, or architecture before building
-- Requirements are still fluid; multiple approaches are on the table
-- Any time you'd otherwise dump a long multi-point design in one message
-
-**When NOT to use:** the plan is already agreed and you're writing it down (use `plan-write`); trivial single-step changes.
+**Not for:** a plan that is already agreed and only needs writing down (use `plan-write`); trivial single-step changes.
 
 ## The Five Behaviors
 

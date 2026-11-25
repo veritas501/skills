@@ -1,6 +1,6 @@
 ---
 name: plan-execute
-description: Use when executing or resuming a layered plan-write directory, especially when tasks have dependencies, bounded write scopes, durable results, optional sub-agent delegation, or risk of architectural drift and retroactive plan editing.
+description: Execute or resume a plan-write plan directory task by task, recording durable results.
 ---
 
 # plan-execute
@@ -17,12 +17,7 @@ Keep three authorities separate:
 
 **Core principle:** Re-read design before every task, execute only ready work within declared scope, and preserve history. Runtime facts extend results; they never rewrite the authored contract after execution begins.
 
-## When to use
-
-- Executing or resuming `.plans/<MM-DD>-<feature_name>/`.
-- Coordinating dependency-aware tasks with bounded write scopes.
-- Using optional sub-agents without making them autonomous planners.
-- Recovering from drift, stale results, a changed requirement, or a material design conflict.
+**Not for:** work with no `.plans/<MM-DD>-<feature_name>/` directory yet. Settle the frame with `plan-discuss` and write it with `plan-write` first.
 
 ## Iron precondition
 
