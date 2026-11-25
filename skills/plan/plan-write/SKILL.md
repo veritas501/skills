@@ -5,113 +5,85 @@ description: Write an agreed multi-step change as a layered plan directory of de
 
 # plan-write
 
-## Overview
+Record an agreed change as a layered Markdown plan: design files that hold the stable decisions, and bounded task files that an executor can carry out without rediscovering the architecture and without being handed pre-written code.
 
-Write an agreed change as a **layered Markdown plan**: stable design files plus bounded task files that a coordinator can execute without rediscovering architecture or receiving pre-written implementation.
+A plan is a point-in-time contract for one change. It is not documentation of the current system; code, tests, schemas, ADRs, and maintained docs are. What execution actually did is recorded under `results/` by `plan-execute`.
 
-Keep three artifacts distinct:
+## Precondition
 
-- **Plan:** point-in-time contract for one agreed change.
-- **Results:** execution evidence—changed files, verification, deviations, blockers, and completion state.
-- **Current system documentation:** current code, tests, schemas, ADRs, and maintained product documentation.
+The frame must already be agreed with the user: goal, non-goals, architecture, technology, and acceptance. If any of the five is open, or materially different approaches are still being weighed, stop and use `plan-discuss`. The approach is not chosen here.
 
-**Core principle:** Separate stable decisions from task detail, then preserve the authored plan after execution begins. A historical plan explains the intended change; it is not living documentation for the repository forever.
-
-**Companion skills:** `plan-discuss` settles the frame breadth-first. `plan-write` records that frame. `plan-execute` freezes and executes it while re-reading declared design dependencies.
-
-## Precondition: agreed frame required
-
-`plan-write` turns an **already-agreed** frame into files. It is not where the approach is selected.
-
-```
-NO PLAN FILES BEFORE THE FRAME IS AGREED.
-```
-
-Before writing, confirm goal, non-goals, architecture, technology, and acceptance with the user. If requirements remain fluid or materially different approaches are open, stop and load `plan-discuss` first.
-
-Pipeline order is fixed: **plan-discuss → plan-write → plan-execute**.
-
-## Plan lifecycle and history
-
-### Draft
-
-A plan is editable only before execution starts. While no `results/00-execution.md` exists, revise the design and tasks with the user as needed.
-
-### Frozen
-
-`plan-execute` creates `results/00-execution.md` before the first task. Its presence freezes authored files: `00`–`50` and `tasks/` MUST NOT be edited. Runtime facts belong only in `results/`.
-
-### Follow-up or corrective change
-
-After freeze, a new requirement, changed meaning, invalid design assumption, or material correction requires a separate plan:
-
-- `original`: first plan in a lineage; parent is `none`.
-- `follow-up`: additional or changed behavior after an earlier plan.
-- `corrective`: repairs a material defect in an earlier agreed design.
-
-The new plan MUST inspect the current repository first. Reference the earlier plan only for lineage and rationale, describe the delta, and restate constraints still needed for safe execution. Never synchronize an old plan to current code or treat it as current architecture documentation.
-
-## Layered authoring
-
-Stabilize the top before drilling down:
-
-1. Write `00-overview.md` and structural dimension files first; obtain user agreement before task files.
-2. Probe goal, necessity, solvability, verifiability, and reversibility before expanding a branch into tasks.
-3. While still draft, fold task detail back when a top-level decision changes instead of preserving detail based on an obsolete frame.
-
-## Directory structure
+## Directory
 
 ```text
-.plans/<MM-DD>-<feature_name>/
-  00-overview.md        # goal, lineage, constraints, acceptance, assumptions
-  10-tech-stack.md      # retained/new technology and rationale
+.plans/<YYYY-MM-DD>-<feature-name>/
+  00-overview.md        # lineage, goal, non-goals, constraints, acceptance, assumptions
+  10-tech-stack.md      # technology kept and introduced, with rationale
   20-architecture.md    # modules, owners, boundaries, dependencies, data flow
-  30-data-model.md      # data structures, storage, schema; omit if N/A
-  40-interfaces.md      # public/inter-module contracts; omit if N/A
-  50-risks.md           # risks, open questions, blockers
+  30-data-model.md      # data structures, storage, schema
+  40-interfaces.md      # public and inter-module contracts
+  50-risks.md           # risks and how each is contained
   tasks/
     task-01-<slug>.md
     task-02-<slug>.md
-  results/              # created/updated by plan-execute, not authored as task design
-    00-execution.md
-    <Task-ID>.md
+  results/              # written by plan-execute; never authored here
 ```
 
-Numbered prefixes define read order and stability. `00-overview.md`, `20-architecture.md`, and `tasks/` are required; add or omit other dimensions only when the change needs them.
+`00-overview.md`, `20-architecture.md`, and `tasks/` are required. Write `10`, `30`, `40`, and `50` only when the change needs them. The date is the day the plan is written.
 
-## Git handling
+Plan directories are local by default. In a Git repository, add `.plans/` to the repository-root `.gitignore` before creating the directory; that change may be committed. Do not stage or commit anything under `.plans/` unless the user asks for versioned plan history.
 
-Plan directories are local coordination artifacts by default. Before creating `.plans/`, determine whether the workspace is a Git repository. If it is, proactively create or update the repository-root `.gitignore` so it contains `.plans/`; do not wait for the user and do not rely only on careful staging.
+## Order of writing
 
-The `.gitignore` change is normal repository configuration and may be committed. Do not stage or commit files under `.plans/` unless the user explicitly requests versioned plan history.
+1. Inspect the current repository at the places the change touches. Earlier plans describe what was once intended, not what is there now.
+2. Write `00-overview.md` and the design files, and get the user's agreement on them before writing any task file.
+3. Write the task files.
+4. While the plan is a draft, a changed design decision means rewriting the tasks that depend on it from the new decision. Do not patch detail written for the old one.
 
-## Top-level file rules
+## Design files
 
-- `00-overview.md` MUST contain `Plan lineage`, Goal, Non-goals, Constraints, stable Acceptance criteria IDs, and Assumptions.
-- `Plan lineage` MUST name **Plan type**, **Parent plan**, and **Trigger**. Original plans use parent `none`.
-- Every acceptance ID MUST map to at least one task.
-- `20-architecture.md` MUST state module ownership, boundaries, dependency relations, and data flow.
-- Top-level files state decisions and contracts, not commands, full code, or step-by-step implementation.
-- Durable current-state architecture belongs in maintained docs, ADRs, schemas, tests, and code—not in historical plans.
+`00-overview.md` follows this skeleton. `plan-execute` looks up the acceptance IDs and non-goals here, so keep the headings and the ID format.
 
-## Task graph and coordination metadata
+```markdown
+# <Change name>
 
-Every new task MUST declare:
+## Plan lineage
+- Plan type: original | follow-up | corrective
+- Parent plan: none | .plans/<directory of the earlier plan>
+- Trigger: <what prompted this plan>
 
-- `Task-ID`: stable identity such as `TASK-01`.
-- `Depends-on`: top-level design files the worker must re-read before the task.
-- `After`: predecessor Task-IDs requiring valid completed results; `none` when independent.
-- `Write-scope`: exact files or conservative directory patterns the task may modify.
-- `Produces`: expected files or durable outputs.
-- `Acceptance`: stable acceptance IDs this task helps satisfy.
+## Goal
+## Non-goals
+## Constraints
 
-`Depends-on` is a design-reading gate; `After` is an execution dependency. They are not interchangeable.
+## Acceptance
+- AC-01: <observable criterion>
+- AC-02: <observable criterion>
 
-Task numbers MUST form a valid topological order and the graph MUST have no cycles. A task becomes ready only after every `After` predecessor completes. Ready tasks may run concurrently only when write scopes and side effects are clearly disjoint. Shared manifests, generated outputs, migrations, fixtures, or uncertain scope force serialization. This declarative graph is sufficient; do not add runtime orchestration code.
+## Assumptions
+```
 
-## Task file structure
+- Every acceptance ID maps to at least one task.
+- `20-architecture.md` states module ownership, boundaries, dependency direction, and data flow.
+- Design files state decisions and contracts. Commands, code, and step-by-step implementation belong in tasks.
+- A question that is still open is not a risk to list in `50-risks.md`; resolve it with the user before execution, because the plan cannot be edited afterwards.
 
-Use contract-level prose, not a replacement implementation:
+## Task files
+
+Every task declares six fields:
+
+| Field | Meaning |
+|---|---|
+| `Task-ID` | Stable identity, `TASK-01`. Matches the number in the filename |
+| `Depends-on` | Design files the worker reads before starting the task |
+| `After` | Task-IDs that must be completed first, or `none` |
+| `Write-scope` | The files, or conservative directory patterns, the task may modify |
+| `Produces` | What must exist when the task is done, checked at final acceptance. May be narrower than `Write-scope`, and may name outputs that are not files |
+| `Acceptance` | The acceptance IDs this task helps satisfy |
+
+`Depends-on` is about reading and `After` is about ordering; a task usually needs both.
+
+Task numbers form a valid topological order of the `After` graph, which has no cycles. Two tasks may run concurrently only when their write scopes and side effects are clearly disjoint, so give tasks that touch shared manifests, generated files, migrations, or fixtures an `After` relation that serializes them.
 
 ```markdown
 # Task 02: Add session-expiry handling
@@ -120,90 +92,62 @@ Task-ID: TASK-02
 Depends-on: 00-overview.md, 20-architecture.md, 40-interfaces.md
 After: TASK-01
 Write-scope: src/auth/session.ts, tests/auth/session.test.ts
-Produces: src/auth/session.ts, tests/auth/session.test.ts
+Produces: expiry handling in `validateSession`, with tests
 Acceptance: AC-03, AC-04
 
-## Constraints from top-level
+## Constraints from the design
 - Session policy remains owned by the auth module.
-- Preserve the existing public session interface and error taxonomy.
+- The public session interface and error taxonomy are unchanged.
 
 ## Files and symbols
 - Modify `validateSession` in `src/auth/session.ts`.
-- Extend expiry scenarios in `tests/auth/session.test.ts`.
+- Extend the expiry scenarios in `tests/auth/session.test.ts`.
 
 ## Steps
-- Describe expired, valid, and malformed-session behavior, including boundary timestamps.
-- Add a failing scenario for the observable expiry contract, then implement within the named owner.
-- Run the repository's focused auth test command; expect the new and existing scenarios to pass.
+- A session whose expiry timestamp equals the current time is expired. A malformed session is rejected with the existing malformed-session error, not the expiry error.
+- Add a failing scenario for each case, then implement within `validateSession`.
+- Run the focused auth tests: `npm test -- auth/session`. The new and existing scenarios pass.
 
-## Verify against top-level
-- Confirm ownership and dependency direction match `20-architecture.md`.
-- Confirm the public contract still matches `40-interfaces.md`.
-- Confirm no technology outside `10-tech-stack.md` was introduced.
+## Verify against the design
+- Ownership and dependency direction match `20-architecture.md`.
+- The public contract still matches `40-interfaces.md`.
 ```
 
-Prefer stable files, modules, and symbol names over brittle line ranges.
+### How specific a task is
 
-## Minimum sufficient specificity
+A task is executable without guessing its objective or its boundaries, and it does not pre-write the implementation.
 
-A task must be executable without guessing its objective or boundaries, but MUST NOT ordinarily pre-write the implementation.
+State concretely:
 
-Require concrete:
+- The outcome and the observable behavior that proves it.
+- The design constraints the task must honor, restated in the task.
+- Target files, modules, and symbols. Name a symbol, not a line number.
+- Public interfaces or schema shapes when the task touches them.
+- Edge cases, compatibility constraints, the verification command, and its expected result.
+- What is out of scope, when a worker could plausibly think otherwise.
 
-- Outcomes and observable acceptance behavior.
-- Architectural boundaries, ownership, and invariants.
-- Public interfaces or schema shapes when relevant.
-- Target files, modules, and symbols.
-- Edge cases, compatibility constraints, verification commands, and expected outcomes.
-- Explicit non-goals and forbidden scope when ambiguity is plausible.
+Leave out full function, class, file, or test bodies, "replace this file with the content below", and private implementation choices such as helper layout or local control flow.
 
-Normally forbid:
+A short code-shaped example is allowed only when the text itself is the contract: a public signature, a schema or protocol payload, a migration shape, a security invariant, or a non-obvious algorithm.
 
-- Full function, class, or file bodies.
-- Full test bodies.
-- “Replace this file with the exact content below.”
-- Exact line numbers when a stable symbol or structural location exists.
-- Premature private implementation choices such as helper layout or local control flow.
+Removing code does not license vagueness. "Implement error handling", "add tests", and "TBD" are plan defects; replace each with the behavior, the named location, the cases, and the check.
 
-A short code-shaped example is allowed only when the text itself is the contract: a public signature, schema/protocol payload, migration shape, security invariant, or genuinely non-obvious algorithm. Keep it minimal and state why prose would be less precise.
+## Lifecycle
 
-Vague instructions remain plan failures. Removing code does not permit “implement error handling,” “add tests,” or “TBD.” Correct vagueness with precise behavior, boundaries, named locations, edge cases, examples, and verification—not ordinary full source or test bodies.
+- **Draft.** Until `results/00-execution.md` exists, the plan is edited freely with the user.
+- **Frozen.** `plan-execute` creates `results/00-execution.md` before the first task. From then on the design files and `tasks/` are never edited, including to make them match the code that was eventually written.
+- **After freeze.** A new requirement, a changed meaning, or a design assumption that proved wrong gets a separate plan in its own directory: `follow-up` for added or changed behavior, `corrective` for a material defect in the earlier design. It names its parent in `Plan lineage`, describes only the delta, and restates the constraints it still relies on, since its executor does not read the parent.
 
-## Execution handoff
+## Review and handoff
 
-Before invoking `plan-execute`:
+Check the draft before handing it over, and fix what fails:
 
-1. Confirm the plan is still a draft and the user approved the top-level frame.
-2. Validate task metadata, dependencies, write scopes, outputs, and acceptance coverage.
-3. Tell the user where authored plan files live and that execution will freeze them by creating `results/00-execution.md`.
-4. Invoke `plan-execute`; do not edit the authored plan after freeze.
+1. No `results/00-execution.md` exists.
+2. `Plan lineage` is filled in and correct.
+3. Every acceptance ID maps to at least one task, and every ID a task cites exists in the overview.
+4. Every task has all six fields; every `Depends-on` file exists; every `After` names a real task.
+5. Numeric order is topological, there is no cycle, and tasks with overlapping or uncertain scopes are serialized.
+6. Every task restates the design constraints it must honor.
+7. Design files contain no implementation detail; tasks contain no full source or test bodies and no vague steps.
 
-## Self-review
-
-Before handoff, check:
-
-1. Every acceptance ID maps to at least one task.
-2. Every task has `Task-ID`, `Depends-on`, `After`, `Write-scope`, `Produces`, and `Acceptance`.
-3. Numeric order is topological; dependencies are valid and acyclic; overlapping scopes are serialized.
-4. Every task restates the top-level constraints it must honor.
-5. No implementation detail leaked into top-level files.
-6. No ordinary full source/test body or exact-content replacement appears in tasks.
-7. Task prose remains specific about outcomes, boundaries, symbols, invariants, edge cases, and verification.
-8. `Plan lineage` exists and correctly identifies original, follow-up, or corrective history.
-9. The plan is still a draft; no execution marker exists.
-10. No later requirement is being folded into an already-frozen plan.
-
-Fix defects before handoff.
-
-## Common mistakes
-
-| Mistake | Fix |
-|---|---|
-| Writing tasks before the frame is agreed | Return to `plan-discuss`; approve `00` and structural files first. |
-| Omitting coordination metadata | Add all six stable fields; do not make the executor infer dependencies or scope. |
-| Editing an old plan to match later code | Preserve it as history; inspect current state and create a linked follow-up/corrective plan. |
-| Treating a plan as current architecture documentation | Update maintained docs/ADRs/schemas when current-state documentation is needed. |
-| Writing full source or test bodies in a task | State contracts, target symbols, behavior, invariants, scenarios, and expected verification instead. |
-| Becoming vague after removing code blocks | Add observable outcomes, edge cases, named locations, and pass/fail evidence. |
-| Using exact line numbers | Name the stable symbol or structural location. |
-| Parallelizing overlapping or uncertain scopes | Serialize them with `After`; parallelism requires clearly disjoint writes and side effects. |
+Then tell the user where the plan is and that executing it freezes the authored files. Start `plan-execute` when they give the go-ahead.
