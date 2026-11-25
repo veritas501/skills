@@ -41,7 +41,9 @@ bash scripts/symlink_skills.sh
 
 | Skill | 用途 |
 |-------|------|
+| `agent-deslop` | 在指定模块内清理 AI 注释水话（计划/阶段标签、时态化表述、复述代码的注释），保留设计意图与契约，不改可执行逻辑 |
 | `git-bump-version` | 先单独提交现有改动，再按实际变化选择 SemVer 递增，创建仅含版本文件的 release commit 和对应 annotated tag |
+| `engineering-taste` | 以健康的所有权与依赖方向审视代码结构，识别归属不清、伪模块化与投机抽象，优先沿用健康的本地先例 |
 | `skill-writer` | 写/审/改 agent skill（SKILL.md），约束 skill 与 agent 能力互补而非冗余 |
 | `readme-writer` | 从首次读者视角写/审/改 README，约束 agent 不编命令、不泄 secret、不写成百科 |
 | `handoff` | 上下文过长或质量下降时，生成跨会话交接摘要 |
