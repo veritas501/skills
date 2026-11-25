@@ -1,82 +1,87 @@
 ---
 name: agent-deslop
-description: Deslop and simplify code for clarity, consistency, and maintainability—stripping AI comment artifacts and unnecessary complexity while preserving exact behavior.
+description: Remove AI slop from code, such as plan or chat residue in comments and needless structure.
 ---
 
-You are a code refinement and deslopping specialist. Your job is to elevate AI-generated or recently modified code to timeless, production-grade engineering quality—removing process noise and structural bloat without ever altering behavior.
+# Agent Deslop
+
+You already know how to simplify code. This skill pins what counts as slop, what must survive, and the evidence required before touching structure.
+
+## Core rule: behavior never changes
+
+Change only how the code is structured and documented, never what it does. Features, edge cases, public signatures, outputs, and side effects stay intact.
+
+Slop is only what can be removed with no observable difference. When a cleanup cannot be shown to be behavior-neutral, leave the code as it is and list it in the report. This rule outranks everything below.
+
+Behavior includes more than control flow: exported names, parameter names callers can pass by keyword, serialized field names, and the text of log and error messages are all part of it.
 
 ## Scope
-* Target the specific module, file, or directory provided by the user.
-* If no scope is specified, default strictly to code modified in the current session (`git diff`). Never touch unrelated code.
 
-## Core Principles
+- Work on the module, file, or directory the user names.
+- With no scope given, take the changes of the current session: uncommitted work including staged and untracked files, plus commits made in this session. When that set is empty or its extent is unclear, ask for a scope instead of guessing.
+- Inside a diff, stay within the changed hunks. Never touch unrelated code.
+- Skip generated, vendored, and third-party files.
 
-### 1. Preserve Exact Behavior
-Never change *what* the code does—only *how* it is structured and documented. All features, edge cases, public signatures, outputs, and side effects must remain intact.
+## Comment slop
 
-### 2. Strip AI Process Artifacts (Deslop)
-Comments and docstrings must read as timeless, static documentation for future maintainers who have zero context of your chat or plan:
-* **Plan & Phase Leakage**: Remove references to plans, phases, tasks, steps, or milestones (`Phase-6`, `Task 1.2`, `Step 3`, `M1`, `Part B`).
-* **Temporal & Conversational Notes**: Remove history- or chat-dependent phrasing (`as requested`, `updated to`, `previously`, `now supports`, `added for...`, `fixed...`) and rewrite as static present-tense behavior.
-* **Redundant Narration**: Delete comments that merely restate the literal code (e.g., `// increment counter` above `counter += 1`).
-* **Surgical Edits**: If a comment mixes a phase tag with useful explanation, strip only the tag and smooth the prose—never discard the underlying insight.
+Comments and docstrings must read as static documentation for a maintainer who never saw the chat or the plan.
 
-### 3. Simplify for Clarity, Not Brevity
-Follow established conventions in project instruction files (`AGENTS.md`, `CLAUDE.md`) and the surrounding codebase, and refine structure by:
-* **Flattening Control Flow**: Reduce deep nesting using early returns / guard clauses; replace nested ternaries with clear `if/else` or `switch`/`match` blocks.
-* **Eliminating Redundancy**: Remove dead code, redundant defensive checks already guaranteed by types/callers, and pass-through wrappers that add indirection without value.
-* **Improving Readability**: Consolidate fragmented related logic and use explicit, self-documenting names over cryptic abbreviations.
-* **Explicit Over Compact**: Choose readable, explicit code over dense one-liners.
+| Kind | Looks like | Action |
+|---|---|---|
+| Plan and phase leakage | `Phase-6`, `Task 1.2`, `Step 3`, `M1`, `Part B` | Remove the reference |
+| Temporal or conversational notes | `as requested`, `updated to`, `previously`, `now supports`, `added for`, `fixed` | Rewrite as present-tense behavior |
+| Narration | `// increment counter` above `counter += 1`; a docstring that only repeats the signature | Delete |
+| Tombstones | `// removed X`, `// moved to Y`, commented-out old code | Delete |
+| Notes to a reviewer | `Note: this is important`, `NOTE: changed from X` | Delete, or rewrite as the fact it stands for |
+| Decoration | Banner separators and emoji the surrounding code does not use | Delete |
 
-### 4. Maintain Balance (Avoid Over-Simplification)
-Do not simplify at the expense of maintainability or debuggability:
-* **Preserve the "Why"**: Keep comments explaining design intent, trade-offs, performance constraints, edge cases, safety/concurrency invariants (e.g., `SAFETY`, `INVARIANT`, lock ordering), and valid doc links/contracts.
-* **Keep Useful Boundaries**: Do not merge unrelated concerns into a single function or collapse helpful abstractions just to reduce line count.
-* **No Clever Tricks**: Avoid overly clever idioms that obscure intent.
+Rules that keep this from destroying real documentation:
 
-## Examples
+- **Remove a term only when it points outside the codebase**, to a plan or a conversation. `Phase`, `Step 3`, and `previously` are also domain language: compiler phases, two-phase commit, protocol steps, a "previously acquired lock". Those stay.
+- **Strip the tag, keep the insight.** When a comment mixes a phase tag with a useful explanation, remove only the tag and smooth the prose.
+- **Keep the why.** Design intent, trade-offs, performance constraints, edge cases, concurrency and safety invariants (`SAFETY`, `INVARIANT`, lock ordering), and valid links to docs or contracts are not slop. A `fixed ...` note that explains a workaround becomes a present-tense statement of what the code guards against.
+- **Never touch comments that tools read**: `# noqa`, `# type: ignore`, `// nolint`, `// eslint-disable`, `//go:build`, license headers, and TODOs that reference an issue tracker.
 
-### Comment Deslop
-**Before:**
+## Structural slop
+
+Follow the project's instruction files (`AGENTS.md`, `CLAUDE.md`, or the equivalent) and the surrounding code over generic taste. Prefer guard clauses to deep nesting and explicit code to dense one-liners or clever idioms. Do not merge unrelated concerns or collapse a helpful abstraction to save lines.
+
+Removal needs evidence, never just the appearance of being unused or unreachable:
+
+| Target | Evidence required |
+|---|---|
+| Dead code | No reference anywhere in the repository, dynamic ones included (lookup by string, registries, reflection, FFI), and the symbol is not exported or otherwise public |
+| Redundant defensive check | The condition is ruled out by something enforced: a type the compiler actually checks, or validation on every path into the function. The callers you happened to read, unchecked type hints, and casts are not evidence |
+| Pass-through wrapper | Private, with every call site inside the scope being edited. A public wrapper is a signature and stays |
+| Rename, including names carrying plan residue such as `foo_v2_fixed` or `test_task_2_1` | A local variable or private symbol whose every use lies inside the scope being edited. Anything exported, serialized, referenced by string, or selected by name in CI keeps its name |
+
+Leftover debug output and scratch files from the session are reported, not silently deleted: removing output is a behavior change.
+
+## Example: what to keep
+
+Deslopped:
+
 ```text
-Per-build opcode inverse-permutation (Phase-6 polymorphic ISA). Updated as
-requested so that after rolling-key decoding recovers a wire opcode byte,
-one lookup maps it back to the canonical opcode.
+Before: Per-build opcode inverse-permutation (Phase-6 polymorphic ISA). Updated as
+        requested so that after rolling-key decoding recovers a wire opcode byte,
+        one lookup maps it back to the canonical opcode.
+
+After:  Per-build opcode inverse-permutation for the polymorphic ISA. After
+        rolling-key decoding recovers a wire opcode byte, one lookup maps it back
+        to the canonical opcode.
 ```
 
-**After:**
+Left alone, although it contains the same trigger words:
+
 ```text
-Per-build opcode inverse-permutation for the polymorphic ISA. After
-rolling-key decoding recovers a wire opcode byte, one lookup maps it back
-to the canonical opcode.
+Phase 2 of the handshake: the server proves key possession before the client
+sends credentials. Previously issued tickets stay valid until they expire.
 ```
 
-### Control Flow Simplification
-**Before:**
-```text
-// Check if user is valid (Added in Task 2.1)
-if user != null {
-    if user.is_active {
-        // Return the user role
-        return user.role
-    } else {
-        return DEFAULT_ROLE
-    }
-} else {
-    return DEFAULT_ROLE
-}
-```
+"Phase 2" names a protocol phase and "previously issued" describes runtime state. Neither refers to a plan or a conversation.
 
-**After:**
-```text
-if user == null || !user.is_active {
-    return DEFAULT_ROLE
-}
-return user.role
-```
+## Verify and report
 
-## Workflow
-1. **Inspect**: Read the target scope (or `git diff`) to identify AI comment artifacts, structural bloat, and convention mismatches.
-2. **Refine**: Apply surgical edits to both comments and code structure while keeping behavior identical.
-3. **Verify**: Review `git diff` and run the project's standard build, lint, or test checks to confirm zero regressions.
-4. **Report**: Summarize the modified files, key simplifications made, and number of AI artifacts removed.
+- Comment-only edits need the formatter and linter, not a test run.
+- Every structural edit needs the project's build and tests. When no test covers the touched path, treat the edit as unproven: revert it and report it.
+- Report the files changed, what was removed by kind, which checks ran with their results, and every cleanup left unapplied together with the evidence that was missing.
